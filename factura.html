@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Factura PETSAFE</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Libre+Barcode+128&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body class="invoice-window">
+    <div id="invoice-root"></div>
+
+    <script>
+      const DB_KEY = 'petsafe_db';
+
+      function readDb() {
+        try {
+          const raw = localStorage.getItem(DB_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch (error) {
+          console.error('Error leyendo la base de datos:', error);
+          return null;
+        }
+      }
+
+      function formatMoney(value) {
+        return new Intl.NumberFormat('es-AR', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(Number(value || 0));
+      }
+
+      function getBrandSvg() {
+        return `
+          <div class="brand-mark">
+            <svg viewBox="0 0 64 64" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+              <path d="M32 5 52 13v15c0 12.7-7.7 24.6-20 31-12.3-6.4-20-18.3-20-31V13L32 5Z" fill="none" stroke="currentColor" stroke-width="2.5"/>
+              <path d="M22 28h20v8H22zm-4 12h28v6H18zm10-22h8v10h-8z" fill="currentColor"/>
+            </svg>
+          </div>
+        `;
+      }
+
+      function renderInvoice() {
+        const params = new URLSearchParams(window.location.search);
+        const invoiceId = params.get('id');
+        const userId = params.get('userId');
+        const db = readDb();
+        const root = document.getElementById('invoice-root');
+
+        if (!db || !userId || !invoiceId) {
+          root.innerHTML = '<div class="invoice-sheet"><h2>Factura no disponible</h2></div>';
+          return;
+        }
+
+        const user = db.users.find((item) => item.id === userId);
+        const invoice = (user?.facturas || []).find((item) => item.id === invoiceId);
+
+        if (!invoice || !user) {
+          root.innerHTML = '<div class="invoice-sheet"><h2>Factura no disponible</h2></div>';
+          return;
+        }
+
+        const isPaid = invoice.estado === 'pagada';
+
+        root.innerHTML = `
+          <div class="invoice-toolbar no-print">
+            <button type="button" class="secondary-btn" id="printBtn">Imprimir / Guardar PDF</button>
+            <button type="button" class="ghost-btn" id="closeBtn">Cerrar pestaña</button>
+          </div>
+
+          <div class="invoice-sheet" style="position: relative;">
+            <div class="invoice-header">
+              <div class="company-block">
+                ${getBrandSvg()}
+                <div class="company-meta">
+                  <h2>PETSAFE | Grupo Asegurador</h2>
+                  <p>
+                    Av. Córdoba 1560, Piso 9<br />
+                    CABA · CUIT 30-71465891-0<br />
+                    www.petsafe.com.ar
+                  </p>
+                </div>
+              </div>
+
+              <div class="invoice-code">
+                <div class="invoice-code-box">FC</div>
+              </div>
+
+              <div class="invoice-legal">
+                <div class="invoice-legal-title">
+                  <strong>Factura C</strong>
+                  ${isPaid ? '<span class="paid-badge">Pagada</span>' : ''}
+                </div>
+                <small>
+                  ${invoice.numero || 'FC-C 0004-00018492'}<br />
+                  Fecha de emisión: ${invoice.fechaEmision || '2026-10-01'}<br />
+                  CAE: ${invoice.cae || '74429183920196'}
+                </small>
+              </div>
+            </div>
+
+            <div class="customer-strip">
+              <div class="field-box">
+                <span>Cliente</span>
+                <strong>${invoice.titular || user.nombre}</strong>
+              </div>
+              <div class="field-box">
+                <span>Documento</span>
+                <strong>CUIL 20-12345678-9</strong>
+              </div>
+              <div class="field-box">
+                <span>Póliza</span>
+                <strong>${user.poliza || 'PS-884120'}</strong>
+              </div>
+              <div class="field-box">
+                <span>Plan</span>
+                <strong>${invoice.plan || user.plan}</strong>
+              </div>
+            </div>
+
+            <table class="invoice-table">
+              <thead>
+                <tr>
+                  <th>Concepto</th>
+                  <th>Período</th>
+                  <th>Vencimiento</th>
+                  <th>Importe</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>${invoice.concepto || 'Cobertura mensual'}</td>
+                  <td>${invoice.periodo || 'Octubre 2026'}</td>
+                  <td>${invoice.vencimiento || '14/10/2026'}</td>
+                  <td>$ ${formatMoney(invoice.importe || 0)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="fiscal-grid">
+              <div class="fiscal-card">
+                <h4>Detalle fiscal</h4>
+                <div class="field-box">
+                  <span>Moneda</span>
+                  <strong>ARS</strong>
+                </div>
+                <div class="field-box" style="margin-top: 8px;">
+                  <span>Forma de pago</span>
+                  <strong>${invoice.tipo || 'Rapipago / Pago Fácil'}</strong>
+                </div>
+              </div>
+
+              <div class="fiscal-card">
+                <h4>Totales</h4>
+                <div class="field-box">
+                  <span>Subtotal</span>
+                  <strong>$ ${formatMoney(invoice.importe || 0)}</strong>
+                </div>
+                <div class="field-box" style="margin-top: 8px;">
+                  <span>Total</span>
+                  <strong>$ ${formatMoney(invoice.importe || 0)}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="talon">
+              <div class="talon-header">Cupón de pago</div>
+
+              <div class="talon-grid">
+                <div class="talon-box">
+                  <h5>Vencimiento</h5>
+                  <strong>${invoice.vencimiento || '10/10/2026'}</strong>
+                </div>
+                <div class="talon-box">
+                  <h5>Importe</h5>
+                  <strong>$ ${formatMoney(invoice.importe || 0)}</strong>
+                </div>
+                <div class="talon-box">
+                  <h5>Comprobante</h5>
+                  <strong>${invoice.numero || 'FC-C 0004-00018492'}</strong>
+                </div>
+              </div>
+
+              <div class="barcode-box" style="margin-top: 16px;">
+                <span class="barcode">${invoice.barCode || '0004000184922026101000450000071589421984210000184927'}</span>
+                <span class="barcode-number">${invoice.codigoPago || '000400018492'}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const printBtn = document.getElementById('printBtn');
+        const closeBtn = document.getElementById('closeBtn');
+
+        if (printBtn) {
+          printBtn.addEventListener('click', () => window.print());
+        }
+
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            if (window.opener && !window.opener.closed) {
+              window.close();
+              return;
+            }
+
+            window.close();
+          });
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', renderInvoice);
+    </script>
+  </body>
+</html>

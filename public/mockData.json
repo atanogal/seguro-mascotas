@@ -1,0 +1,167 @@
+{
+  "plans": [
+    {
+      "id": "Basico",
+      "nombre": "Plan Básico",
+      "precio": 15000,
+      "descripcion": "Cobertura esencial para vacunas y guardia veterinaria 24hs.",
+      "cobertura": [
+        "Vacunas y desparasitación",
+        "Guardia veterinaria 24hs",
+        "Consulta médica general",
+        "Asistencia de urgencia básica"
+      ]
+    },
+    {
+      "id": "Completo",
+      "nombre": "Plan Completo",
+      "precio": 28000,
+      "descripcion": "Cobertura ampliada con cirugías y estudios de diagnóstico.",
+      "cobertura": [
+        "Todo lo incluido en Básico",
+        "Cirugías y procedimientos quirúrgicos",
+        "Estudios de diagnóstico",
+        "Hospitalización clínica",
+        "Revisiones preventivas"
+      ]
+    },
+    {
+      "id": "Premium",
+      "nombre": "Plan Premium",
+      "precio": 42000,
+      "descripcion": "Cobertura total 100%, internación y farmacia con atención prioritaria.",
+      "cobertura": [
+        "Cobertura total 100%",
+        "Internación y cuidados intensivos",
+        "Farmacia y medicamentos",
+        "Cirugías, estudios y rehabilitación",
+        "Atención prioritaria y cobertura máxima"
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "admin-1",
+      "nombre": "Administrador PetSafe",
+      "email": "admin@petsafe.com",
+      "password": "admin123",
+      "telefono": "+54 11 4000-0000",
+      "rol": "admin",
+      "estado": "aprobado",
+      "plan": "Premium",
+      "facturas": []
+    },
+    {
+      "id": "user-1",
+      "nombre": "María López",
+      "email": "usuario@petsafe.com",
+      "password": "user123",
+      "telefono": "+54 11 2233-3333",
+      "rol": "usuario",
+      "estado": "aprobado",
+      "plan": "Premium",
+      "poliza": "PS-884120",
+      "mascotas": [
+        {
+          "id": "pet-1",
+          "nombre": "Luna",
+          "especie": "Perro",
+          "edad": 3
+        }
+      ],
+      "facturas": [
+        {
+          "id": "fac-00018490",
+          "numero": "FC-C 0004-00018490",
+          "periodo": "Agosto 2026",
+          "concepto": "Cobertura Plan Premium - Póliza #PS-884120",
+          "vencimiento": "10/08/2026",
+          "importe": 42000,
+          "estado": "pagada",
+          "cae": "74429183920194",
+          "barCode": "0004000184902026081000450000071589421984210000184927",
+          "fechaEmision": "2026-08-01",
+          "codigoPago": "000400018490",
+          "titular": "María López",
+          "mascota": "Luna",
+          "plan": "Premium",
+          "tipo": "Rapipago / Pago Fácil"
+        },
+        {
+          "id": "fac-00018491",
+          "numero": "FC-C 0004-00018491",
+          "periodo": "Septiembre 2026",
+          "concepto": "Cobertura Plan Premium - Póliza #PS-884120",
+          "vencimiento": "10/09/2026",
+          "importe": 42000,
+          "estado": "pagada",
+          "cae": "74429183920195",
+          "barCode": "0004000184912026091000450000071589421984210000184927",
+          "fechaEmision": "2026-09-01",
+          "codigoPago": "000400018491",
+          "titular": "María López",
+          "mascota": "Luna",
+          "plan": "Premium",
+          "tipo": "Rapipago / Pago Fácil"
+        },
+        {
+          "id": "fac-00018492",
+          "numero": "FC-C 0004-00018492",
+          "periodo": "Octubre 2026",
+          "concepto": "Cobertura Plan Premium - Póliza #PS-884120",
+          "vencimiento": "10/10/2026",
+          "importe": 42000,
+          "estado": "pendiente",
+          "cae": "74429183920196",
+          "barCode": "0004000184922026101000450000071589421984210000184927",
+          "fechaEmision": "2026-10-01",
+          "codigoPago": "000400018492",
+          "titular": "María López",
+          "mascota": "Luna",
+          "plan": "Premium",
+          "tipo": "Rapipago / Pago Fácil"
+        }
+      ]
+    },
+    {
+      "id": "user-2",
+      "nombre": "Lucas Gómez",
+      "email": "lucas.pendiente@petsafe.com",
+      "password": "demo123",
+      "telefono": "+54 11 5556-6677",
+      "rol": "usuario",
+      "estado": "pendiente",
+      "plan": "Basico",
+      "poliza": null,
+      "mascotas": [
+        {
+          "id": "pet-2",
+          "nombre": "Milo",
+          "especie": "Gato",
+          "edad": 2
+        }
+      ],
+      "facturas": []
+    },
+    {
+      "id": "user-3",
+      "nombre": "Ana Torres",
+      "email": "ana.pendiente@petsafe.com",
+      "password": "demo456",
+      "telefono": "+54 11 7788-8999",
+      "rol": "usuario",
+      "estado": "pendiente",
+      "plan": "Premium",
+      "poliza": null,
+      "mascotas": [
+        {
+          "id": "pet-3",
+          "nombre": "Nina",
+          "especie": "Perro",
+          "edad": 4
+        }
+      ],
+      "facturas": []
+    }
+  ]
+}
