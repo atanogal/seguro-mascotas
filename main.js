@@ -148,6 +148,37 @@ function getPlanById(planId) {
   return db?.plans?.find((plan) => plan.id === planId) || null;
 }
 
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    },
+    ...options
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.error || 'No se pudo completar la operación.');
+  }
+
+  return payload;
+}
+
+async function refreshStateFromApi() {
+  try {
+    const payload = await requestJson('/api/usuarios', { method: 'GET' });
+    if (payload && Array.isArray(payload.users) && Array.isArray(payload.plans)) {
+      writeDb(payload);
+      return payload;
+    }
+  } catch (error) {
+    console.warn('No se pudo sincronizar con la API:', error.message);
+  }
+
+  return readDb();
+}
+
 function setFlash(type, text) {
   state.flash = { type, text };
 }
@@ -706,7 +737,7 @@ function handleAppClick(event) {
   }
 }
 
-function handleAppSubmit(event) {
+async function handleAppSubmit(event) {
   if (event.target.matches('#loginForm')) {
     event.preventDefault();
     const formData = new FormData(event.target);
@@ -719,31 +750,27 @@ function handleAppSubmit(event) {
       return;
     }
 
-    const db = readDb();
-    const user = db.users.find((item) => item.email.toLowerCase() === email.toLowerCase() && item.password === password);
+    try {
+      const payload = await requestJson('/api/auth', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
 
-    if (!user) {
-      setFlash('error', 'Las credenciales ingresadas no coinciden con ningún usuario.');
+      const user = payload.user;
+      if (!user) {
+        throw new Error('La API no devolvió usuario válido.');
+      }
+
+      setSession(user.id);
+      state.flash = { type: '', text: '' };
+      await refreshStateFromApi();
+      renderApp();
+      return;
+    } catch (error) {
+      setFlash('error', error.message || 'Las credenciales ingresadas no coinciden con ningún usuario.');
       renderApp();
       return;
     }
-
-    if (user.estado === 'pendiente') {
-      setFlash('pending', 'Tu cuenta aún debe ser aprobada por un administrador.');
-      renderApp();
-      return;
-    }
-
-    if (user.estado === 'rechazado') {
-      setFlash('error', 'Tu solicitud fue rechazada. Contactate con administración para más información.');
-      renderApp();
-      return;
-    }
-
-    setSession(user.id);
-    state.flash = { type: '', text: '' };
-    renderApp();
-    return;
   }
 
   if (event.target.matches('#registerForm')) {
@@ -765,36 +792,33 @@ function handleAppSubmit(event) {
       return;
     }
 
-    const db = readDb();
-    const emailExists = db.users.some((user) => user.email.toLowerCase() === email.toLowerCase());
+    try {
+      const payload = await requestJson('/api/registrar', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre: nombreCompleto,
+          dni,
+          email,
+          telefono,
+          password,
+          mascotaNombre,
+          especie,
+          edad,
+          plan
+        })
+      });
 
-    if (emailExists) {
-      setFlash('error', 'El correo electrónico ya se encuentra registrado.');
+      await refreshStateFromApi();
+      state.authMode = 'login';
+      state.authTab = 'login';
+      setFlash('success', 'Solicitud de afiliación registrada. Pendiente de aprobación por auditoría.');
+      renderApp();
+      return;
+    } catch (error) {
+      setFlash('error', error.message || 'No se pudo registrar la solicitud.');
       renderApp();
       return;
     }
-
-    const newUser = {
-      id: `user-${Date.now()}`,
-      nombre: nombreCompleto,
-      dni,
-      email,
-      password,
-      telefono,
-      rol: 'usuario',
-      estado: 'pendiente',
-      plan,
-      poliza: null,
-      mascotas: [{ id: `pet-${Date.now()}`, nombre: mascotaNombre, especie, edad }],
-      facturas: []
-    };
-
-    db.users.push(newUser);
-    writeDb(db);
-    state.authMode = 'login';
-    state.authTab = 'login';
-    setFlash('success', 'Solicitud de afiliación registrada. Pendiente de aprobación por auditoría.');
-    renderApp();
   }
 
   if (event.target.matches('#addPetForm')) {
@@ -852,35 +876,44 @@ function handleAppChange(event) {
   }
 }
 
-function approveUser(userId) {
-  const db = readDb();
-  const user = db.users.find((item) => item.id === userId);
-  if (!user) return;
+async function approveUser(userId) {
+  try {
+    const payload = await requestJson('/api/aprobar', {
+      method: 'POST',
+      body: JSON.stringify({ userId, action: 'approve' })
+    });
 
-  user.estado = 'aprobado';
-  user.poliza = user.poliza || generatePolicyNumber();
-  user.facturas = Array.isArray(user.facturas) ? user.facturas : [];
+    const db = payload.db && Array.isArray(payload.db.users) && Array.isArray(payload.db.plans)
+      ? payload.db
+      : await refreshStateFromApi();
 
-  if (!user.facturas.length) {
-    const plan = getPlanById(user.plan) || { nombre: 'Plan Básico', precio: 15000 };
-    user.facturas.push(buildInvoiceForUser(user, plan, 'Octubre 2026', generateSeriesNumber(), Number(plan.precio || 15000)));
+    writeDb(db || readDb());
+    setFlash('success', `La solicitud fue aprobada correctamente.`);
+    renderApp();
+  } catch (error) {
+    setFlash('error', error.message || 'No se pudo aprobar la solicitud.');
+    renderApp();
   }
-
-  writeDb(db);
-  setFlash('success', `La solicitud de ${user.nombre} fue aprobada correctamente.`);
-  renderApp();
 }
 
-function rejectUser(userId) {
-  const db = readDb();
-  const user = db.users.find((item) => item.id === userId);
-  if (!user) return;
+async function rejectUser(userId) {
+  try {
+    const payload = await requestJson('/api/aprobar', {
+      method: 'POST',
+      body: JSON.stringify({ userId, action: 'reject' })
+    });
 
-  user.estado = 'rechazado';
-  user.poliza = null;
-  writeDb(db);
-  setFlash('error', `La solicitud de ${user.nombre} fue rechazada.`);
-  renderApp();
+    const db = payload.db && Array.isArray(payload.db.users) && Array.isArray(payload.db.plans)
+      ? payload.db
+      : await refreshStateFromApi();
+
+    writeDb(db || readDb());
+    setFlash('error', `La solicitud fue rechazada.`);
+    renderApp();
+  } catch (error) {
+    setFlash('error', error.message || 'No se pudo rechazar la solicitud.');
+    renderApp();
+  }
 }
 
 function updateUserPlan(planId) {
@@ -901,7 +934,7 @@ function updateUserPlan(planId) {
   renderApp();
 }
 
-function markInvoicePaid(invoiceId) {
+async function accredInvoicePayment(invoiceId) {
   const currentUser = getCurrentUser();
   if (!currentUser || currentUser.rol !== 'admin') {
     setFlash('error', 'Solo el administrador puede acreditar pagos.');
@@ -909,41 +942,26 @@ function markInvoicePaid(invoiceId) {
     return;
   }
 
-  const db = readDb();
-  const user = db.users.find((item) => Array.isArray(item.facturas) && item.facturas.some((invoice) => invoice.id === invoiceId));
-  if (!user) return;
+  try {
+    const payload = await requestJson('/api/cobranzas', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'mark-paid', invoiceId })
+    });
 
-  const invoice = (user.facturas || []).find((item) => item.id === invoiceId);
-  if (!invoice) return;
+    const db = payload.db && Array.isArray(payload.db.users) && Array.isArray(payload.db.plans)
+      ? payload.db
+      : await refreshStateFromApi();
 
-  invoice.estado = 'pagada';
-  writeDb(db);
-  setFlash('success', `Se acreditó el pago del comprobante ${invoice.numero}.`);
-  renderApp();
-}
-
-function accredInvoicePayment(invoiceId) {
-  const currentUser = getCurrentUser();
-  if (!currentUser || currentUser.rol !== 'admin') {
-    setFlash('error', 'Solo el administrador puede acreditar pagos.');
+    writeDb(db || readDb());
+    setFlash('success', `Pago acreditado para la factura ${invoiceId}.`);
     renderApp();
-    return;
+  } catch (error) {
+    setFlash('error', error.message || 'No se pudo acreditar el pago.');
+    renderApp();
   }
-
-  const db = readDb();
-  const user = db.users.find((item) => Array.isArray(item.facturas) && item.facturas.some((invoice) => invoice.id === invoiceId));
-  if (!user) return;
-
-  const invoice = (user.facturas || []).find((item) => item.id === invoiceId);
-  if (!invoice) return;
-
-  invoice.estado = 'pagada';
-  writeDb(db);
-  setFlash('success', `Pago acreditado para ${invoice.numero}.`);
-  renderApp();
 }
 
-function revertInvoiceToPending(invoiceId) {
+async function revertInvoiceToPending(invoiceId) {
   const currentUser = getCurrentUser();
   if (!currentUser || currentUser.rol !== 'admin') {
     setFlash('error', 'Solo el administrador puede revertir pagos.');
@@ -951,37 +969,49 @@ function revertInvoiceToPending(invoiceId) {
     return;
   }
 
-  const db = readDb();
-  const user = db.users.find((item) => Array.isArray(item.facturas) && item.facturas.some((invoice) => invoice.id === invoiceId));
-  if (!user) return;
+  try {
+    const payload = await requestJson('/api/cobranzas', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'mark-pending', invoiceId })
+    });
 
-  const invoice = (user.facturas || []).find((item) => item.id === invoiceId);
-  if (!invoice) return;
+    const db = payload.db && Array.isArray(payload.db.users) && Array.isArray(payload.db.plans)
+      ? payload.db
+      : await refreshStateFromApi();
 
-  invoice.estado = 'pendiente';
-  writeDb(db);
-  setFlash('success', `El comprobante ${invoice.numero} volvió a estar pendiente.`);
-  renderApp();
+    writeDb(db || readDb());
+    setFlash('success', `La factura volvió a estar pendiente.`);
+    renderApp();
+  } catch (error) {
+    setFlash('error', error.message || 'No se pudo revertir el pago.');
+    renderApp();
+  }
 }
 
-function informPaymentToReview(invoiceId) {
+async function informPaymentToReview(invoiceId) {
   const currentUser = getCurrentUser();
   if (!currentUser) return;
 
-  const db = readDb();
-  const user = db.users.find((item) => Array.isArray(item.facturas) && item.facturas.some((invoice) => invoice.id === invoiceId));
-  if (!user) return;
+  try {
+    const payload = await requestJson('/api/facturas', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'informar-pago', invoiceId, userId: currentUser.id })
+    });
 
-  const invoice = (user.facturas || []).find((item) => item.id === invoiceId);
-  if (!invoice) return;
+    const db = payload.db && Array.isArray(payload.db.users) && Array.isArray(payload.db.plans)
+      ? payload.db
+      : await refreshStateFromApi();
 
-  invoice.estado = 'en_revision';
-  writeDb(db);
-  setFlash('success', `Se informó el pago del comprobante ${invoice.numero}. Quedó en revisión administrativa.`);
-  renderApp();
+    writeDb(db || readDb());
+    setFlash('success', `Se informó el pago de la factura y quedó en revisión.`);
+    renderApp();
+  } catch (error) {
+    setFlash('error', error.message || 'No se pudo informar el pago.');
+    renderApp();
+  }
 }
 
-function createNewLiquidation(userId) {
+async function createNewLiquidation(userId) {
   const currentUser = getCurrentUser();
   if (!currentUser || currentUser.rol !== 'admin') {
     setFlash('error', 'Solo el administrador puede generar nuevas liquidaciones.');
@@ -989,17 +1019,23 @@ function createNewLiquidation(userId) {
     return;
   }
 
-  const db = readDb();
-  const user = db.users.find((item) => item.id === userId) || getCurrentUser();
-  if (!user || user.rol !== 'usuario') return;
+  try {
+    const payload = await requestJson('/api/cobranzas', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'create-liquidation', userId: userId || currentUser.id })
+    });
 
-  const plan = getPlanById(user.plan) || { nombre: 'Plan Básico', precio: 15000 };
-  const invoice = buildInvoiceForUser(user, plan, 'Noviembre 2026', generateSeriesNumber(), Number(plan.precio || 15000));
-  user.facturas = Array.isArray(user.facturas) ? user.facturas : [];
-  user.facturas.push(invoice);
-  writeDb(db);
-  setFlash('success', `Se emitió una nueva liquidación para ${user.nombre}.`);
-  renderApp();
+    const db = payload.db && Array.isArray(payload.db.users) && Array.isArray(payload.db.plans)
+      ? payload.db
+      : await refreshStateFromApi();
+
+    writeDb(db || readDb());
+    setFlash('success', `Se emitió una nueva liquidación.`);
+    renderApp();
+  } catch (error) {
+    setFlash('error', error.message || 'No se pudo emitir la liquidación.');
+    renderApp();
+  }
 }
 
 function openInvoiceWindow(invoiceId, userId) {

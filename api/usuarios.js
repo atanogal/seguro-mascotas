@@ -1,8 +1,30 @@
 import { readDatabase, writeDatabase, normalizeDbState } from './_lib/store.js';
+import { getSupabaseClient } from './supabaseClient.js';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
+      try {
+        const supabase = getSupabaseClient();
+        const [{ data: usuarios }, { data: mascotas }, { data: planes }] = await Promise.all([
+          supabase.from('usuarios').select('*'),
+          supabase.from('mascotas').select('*'),
+          supabase.from('planes').select('*')
+        ]);
+
+        if (Array.isArray(usuarios)) {
+          const mappedUsers = usuarios.map((user) => ({
+            ...user,
+            facturas: [],
+            mascotas: (mascotas || []).filter((pet) => pet.usuario_id === user.id)
+          }));
+
+          return res.status(200).json({ plans: planes || [], users: mappedUsers });
+        }
+      } catch (supabaseError) {
+        // Fallback to local JSON state below.
+      }
+
       const db = await readDatabase();
       return res.status(200).json(db);
     } catch (error) {

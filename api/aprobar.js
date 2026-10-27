@@ -1,4 +1,5 @@
 import { readDatabase, writeDatabase, normalizeDbState } from './_lib/store.js';
+import { getSupabaseClient } from './supabaseClient.js';
 
 function generatePolicyNumber() {
   return `PET-${new Date().getFullYear()}${String(Math.floor(Math.random() * 900) + 100)}`;
@@ -14,7 +15,7 @@ function buildInvoiceForUser(user, plan, period, series, amount) {
     id: invoiceId,
     numero: afipNumber,
     periodo: period,
-    concepto: `Cobertura ${plan.nombre || user.plan || 'Plan'} - Póliza #${user.poliza || 'PET-2026001'}`,
+    concepto: `Cobertura ${plan.nombre || user.plan || 'Plan'} - Póliza #${user.poliza || generatePolicyNumber()}`,
     vencimiento: `10/${period.includes('Noviembre') ? '11' : '10'}/${new Date().getFullYear()}`,
     importe: Number(amount || plan.precio || 0),
     estado: 'pendiente',
@@ -44,6 +45,55 @@ export default async function handler(req, res) {
 
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+
+    try {
+      const supabase = getSupabaseClient();
+      const userId = String(body.userId || '').trim();
+      const { data: user, error: userError } = await supabase.from('usuarios').select('*').eq('id', userId).maybeSingle();
+
+      if (userError && userError.code !== 'PGRST116') {
+        throw userError;
+      }
+
+      if (!user) {
+        return res.status(404).json({ error: 'Usuario no encontrado.' });
+      }
+
+      if (body.action === 'approve') {
+        const nextPolicy = user.poliza || generatePolicyNumber();
+        const { data: updatedUser } = await supabase
+          .from('usuarios')
+          .update({ estado: 'aprobado', poliza: nextPolicy })
+          .eq('id', user.id)
+          .select('*')
+          .single();
+
+        const { data: mascotas } = await supabase.from('mascotas').select('*').eq('usuario_id', user.id);
+        const firstInvoice = buildInvoiceForUser({ ...updatedUser, mascotas: mascotas || [] }, { nombre: updatedUser.plan || 'Plan Básico', precio: 15000 }, 'Octubre 2026', generateSeriesNumber({ users: [{ facturas: [] }] }), 15000);
+
+        const { data: invoice } = await supabase
+          .from('facturas')
+          .insert([{ ...firstInvoice, usuario_id: user.id, fecha_emision: firstInvoice.fechaEmision, codigo_pago: firstInvoice.codigoPago, bar_code: firstInvoice.barCode }])
+          .select('*')
+          .single();
+
+        return res.status(200).json({ ok: true, user: updatedUser, invoice, db: { users: [updatedUser], facturas: [invoice] } });
+      }
+
+      if (body.action === 'reject') {
+        const { data: updatedUser } = await supabase
+          .from('usuarios')
+          .update({ estado: 'rechazado', poliza: null })
+          .eq('id', user.id)
+          .select('*')
+          .single();
+
+        return res.status(200).json({ ok: true, user: updatedUser, db: { users: [updatedUser] } });
+      }
+    } catch (supabaseError) {
+      // fallback local JSON below
+    }
+
     const db = await readDatabase();
     const user = db.users.find((item) => item.id === body.userId);
 
