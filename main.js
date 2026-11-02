@@ -1419,7 +1419,7 @@ async function createNewLiquidation(userId) {
 function openInvoiceWindow(invoiceId, userId) {
   const resolvedUserId = userId || getCurrentUser()?.id;
   if (!resolvedUserId || !invoiceId) return;
-  const url = `/factura.html?id=${encodeURIComponent(invoiceId)}&userId=${encodeURIComponent(resolvedUserId)}`;
+  const url = `/factura?id=${encodeURIComponent(invoiceId)}&userId=${encodeURIComponent(resolvedUserId)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 

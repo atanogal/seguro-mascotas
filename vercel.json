@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/factura",
+      "destination": "/factura.html"
+    },
+    {
+      "source": "/factura/",
+      "destination": "/factura.html"
+    }
+  ]
+}
