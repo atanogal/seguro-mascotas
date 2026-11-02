@@ -34,8 +34,8 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100%;
+  overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
   font-family: 'Plus Jakarta Sans', sans-serif;
@@ -58,9 +58,9 @@ button {
 }
 
 #app {
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  width: 100%;
+  min-height: 100vh;
+  overflow: visible;
 }
 
 .auth-shell {
@@ -866,21 +866,49 @@ button {
 }
 
 @media (max-width: 980px) {
-  .app-shell,
-  .content-grid,
-  .metric-grid,
-  .form-grid {
+  .app-shell {
     grid-template-columns: 1fr;
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
   }
 
   .sidebar {
+    width: 100%;
+    height: auto;
     padding-bottom: 10px;
+  }
+
+  .content-grid,
+  .metric-grid,
+  .form-grid,
+  .admin-vet-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .content-panel {
+    height: auto;
+    min-height: 0;
+  }
+
+  .tab-panel {
+    overflow: auto;
   }
 }
 
 @media (max-width: 640px) {
+  .auth-shell {
+    height: auto;
+    min-height: 100dvh;
+    padding: 16px 12px;
+    overflow: visible;
+  }
+
   .auth-layout {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100%;
   }
 
   .auth-hero,
@@ -890,9 +918,35 @@ button {
     padding-right: 18px;
   }
 
+  .auth-hero {
+    padding-top: 26px;
+    padding-bottom: 26px;
+  }
+
+  .hero-stats {
+    grid-template-columns: 1fr;
+  }
+
   .topbar {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .nav-list {
+    gap: 6px;
+  }
+
+  .nav-item {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .panel {
+    padding: 14px;
+  }
+
+  .directory-toolbar {
+    grid-template-columns: 1fr;
   }
 }
 
