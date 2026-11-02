@@ -10,7 +10,439 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Libre+Barcode+128&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="/style.css" />
+    <style>
+      :root {
+        --bg: #eef3f7;
+        --panel: #ffffff;
+        --navy: #0f172a;
+        --text: #1f2937;
+        --muted: #64748b;
+        --line: #dfe7ef;
+        --shadow: rgba(15, 23, 42, 0.08);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 20px 16px 40px;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+      }
+
+      .invoice-window {
+        width: 100%;
+        min-height: 100vh;
+        background: linear-gradient(180deg, #eef3f7 0%, #f8fafc 100%);
+        color: var(--text);
+        overflow-x: hidden;
+      }
+
+      #invoice-root {
+        width: min(760px, 100%);
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .invoice-toolbar {
+        width: min(760px, 100%);
+        margin: 0 auto;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .secondary-btn,
+      .ghost-btn,
+      .primary-btn {
+        appearance: none;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #fff;
+        color: var(--navy);
+        font-weight: 700;
+        padding: 10px 14px;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .secondary-btn:hover,
+      .ghost-btn:hover,
+      .primary-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08);
+      }
+
+      .invoice-sheet {
+        width: min(760px, 100%);
+        margin: 0 auto;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-shadow: 0 12px 20px var(--shadow);
+        padding: 22px 26px 24px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .invoice-header {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) 0.7fr minmax(0, 1fr);
+        gap: 18px;
+        border-bottom: 2px solid var(--navy);
+        padding-bottom: 14px;
+        margin-bottom: 18px;
+        align-items: center;
+      }
+
+      .company-block {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .brand-mark {
+        width: 56px;
+        height: 56px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        background: rgba(15, 23, 42, 0.04);
+        color: var(--navy);
+        flex-shrink: 0;
+      }
+
+      .brand-mark svg {
+        width: 34px;
+        height: 34px;
+        display: block;
+      }
+
+      .company-meta {
+        min-width: 0;
+      }
+
+      .company-meta h2 {
+        margin: 0;
+        font-size: 0.96rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        line-height: 1.4;
+      }
+
+      .company-meta p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 0.76rem;
+        line-height: 1.5;
+      }
+
+      .invoice-code {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .invoice-code-box {
+        width: 86px;
+        height: 86px;
+        border: 2px solid var(--navy);
+        display: grid;
+        place-items: center;
+        border-radius: 6px;
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--navy);
+        background: #fff;
+      }
+
+      .invoice-legal {
+        text-align: right;
+      }
+
+      .invoice-legal-title {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .invoice-legal strong {
+        display: block;
+        font-size: 1.15rem;
+        color: var(--navy);
+      }
+
+      .invoice-legal small {
+        display: block;
+        color: var(--muted);
+        font-size: 0.74rem;
+        line-height: 1.6;
+      }
+
+      .paid-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(21, 128, 61, 0.25);
+        background: rgba(21, 128, 61, 0.08);
+        color: #166534;
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .customer-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 12px 14px;
+        margin-bottom: 18px;
+      }
+
+      .field-box {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .field-box span {
+        color: var(--muted);
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .field-box strong {
+        font-size: 0.92rem;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        border: 1px solid var(--line);
+        table-layout: fixed;
+      }
+
+      .invoice-table th,
+      .invoice-table td {
+        border-bottom: 1px solid var(--line);
+        border-right: 1px solid var(--line);
+        padding: 10px 8px;
+        text-align: left;
+        font-size: 0.8rem;
+        line-height: 1.5;
+        word-break: break-word;
+        vertical-align: top;
+      }
+
+      .invoice-table th:last-child,
+      .invoice-table td:last-child {
+        border-right: none;
+      }
+
+      .invoice-table thead th {
+        background: #f8fafc;
+        color: var(--navy);
+        font-weight: 800;
+      }
+
+      .fiscal-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .fiscal-card {
+        border: 1px solid var(--line);
+        background: #f8fafc;
+        border-radius: 6px;
+        padding: 12px 14px;
+      }
+
+      .fiscal-card h4 {
+        margin: 0 0 10px;
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .talon {
+        margin-top: 26px;
+        border-top: 2px dashed #64748b;
+        padding-top: 14px;
+        width: 100%;
+        text-align: center;
+      }
+
+      .talon-header {
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 12px;
+        font-weight: 800;
+      }
+
+      .talon-grid {
+        display: grid;
+        grid-template-columns: 1fr 1.1fr 1fr;
+        gap: 14px;
+      }
+
+      .talon-box {
+        border: 1px solid var(--line);
+        background: #f8fafc;
+        border-radius: 6px;
+        padding: 10px 12px;
+      }
+
+      .talon-box h5 {
+        margin: 0 0 8px;
+        color: var(--muted);
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .barcode-box {
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin-top: 16px;
+        text-align: center;
+      }
+
+      .barcode {
+        display: block;
+        width: 100%;
+        height: 52px;
+        margin: 8px auto;
+        font-family: 'Libre Barcode 128', 'JetBrains Mono', monospace;
+        font-size: clamp(42px, 5vw, 76px);
+        line-height: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        letter-spacing: 1px;
+      }
+
+      .barcode-number {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.03em;
+        color: var(--navy);
+        display: block;
+        margin-top: 6px;
+      }
+
+      @media (max-width: 820px) {
+        .invoice-header,
+        .customer-strip,
+        .fiscal-grid,
+        .talon-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .invoice-legal {
+          text-align: left;
+        }
+
+        .invoice-legal-title {
+          justify-content: flex-start;
+        }
+      }
+
+      @media (max-width: 560px) {
+        body {
+          padding-left: 10px;
+          padding-right: 10px;
+        }
+
+        .invoice-toolbar {
+          justify-content: stretch;
+        }
+
+        .secondary-btn,
+        .ghost-btn,
+        .primary-btn {
+          flex: 1 1 100%;
+          width: 100%;
+        }
+
+        .invoice-sheet {
+          padding: 16px 14px 18px;
+        }
+
+        .company-block {
+          align-items: flex-start;
+        }
+
+        .company-meta h2 {
+          font-size: 0.82rem;
+        }
+
+        .invoice-code-box {
+          width: 68px;
+          height: 68px;
+          font-size: 1.7rem;
+        }
+
+        .invoice-table th,
+        .invoice-table td {
+          font-size: 0.72rem;
+          padding: 8px 6px;
+        }
+      }
+
+      @media print {
+        .no-print {
+          display: none !important;
+        }
+
+        body {
+          background: white;
+          padding: 0;
+        }
+
+        .invoice-sheet {
+          border: none;
+          box-shadow: none;
+          border-radius: 0;
+          padding: 0;
+        }
+      }
+    </style>
   </head>
   <body class="invoice-window">
     <div id="invoice-root"></div>
