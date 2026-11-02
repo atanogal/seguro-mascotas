@@ -28,6 +28,42 @@
         }
       }
 
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name) || params.get(name.toLowerCase()) || null;
+      }
+
+      function normalizeInvoice(raw = {}, fallbackUser = {}) {
+        const invoice = { ...raw };
+        const normalized = {
+          ...invoice,
+          id: invoice.id || invoice.numero || `fac-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+          numero: invoice.numero || invoice.id || 'FC-C 0004-00000000',
+          concepto: invoice.concepto || `Cobertura ${invoice.plan || fallbackUser.plan || 'Plan'} - Póliza #${fallbackUser.poliza || 'PET-2026001'}`,
+          periodo: invoice.periodo || invoice.mes || invoice.fechaEmision || 'Sin período',
+          vencimiento: invoice.vencimiento || invoice.fecha_vencimiento || 'Sin vencimiento',
+          importe: Number(invoice.importe ?? invoice.monto ?? 0),
+          estado: invoice.estado || 'pendiente',
+          cae: invoice.cae || invoice.CAE || '74429183920194',
+          barCode: invoice.barCode || invoice.bar_code || invoice.barcode || invoice.codigoBarra || '',
+          codigoPago: invoice.codigoPago || invoice.codigo_pago || invoice.codigo || '',
+          fechaEmision: invoice.fechaEmision || invoice.fecha_emision || invoice.fecha || '',
+          fechaAcreditacion: invoice.fechaAcreditacion || invoice.fecha_acreditacion || '',
+          titular: invoice.titular || fallbackUser.nombre || 'Titular',
+          mascota: invoice.mascota || (Array.isArray(fallbackUser.mascotas) ? fallbackUser.mascotas[0]?.nombre : '') || 'Mascota no registrada',
+          plan: invoice.plan || fallbackUser.plan || 'Plan',
+          tipo: invoice.tipo || 'Rapipago / Pago Fácil',
+          usuario_id: invoice.usuario_id || invoice.usuarioId || fallbackUser.id || null,
+          documento: invoice.documento || fallbackUser.dni || 'CUIL 20-12345678-9'
+        };
+
+        if (!normalized.barCode && normalized.codigoPago) {
+          normalized.barCode = `${normalized.codigoPago}${String(normalized.importe || 0).padStart(6, '0')}`;
+        }
+
+        return normalized;
+      }
+
       function formatMoney(value) {
         return new Intl.NumberFormat('es-AR', {
           minimumFractionDigits: 2,
@@ -46,14 +82,34 @@
         `;
       }
 
+      function pickInvoiceFromCollection(collection, invoiceId, userId) {
+        if (!Array.isArray(collection)) return null;
+
+        return collection.find((item) => {
+          const normalizedItem = normalizeInvoice(item, {});
+          const matchesId = normalizedItem.id === invoiceId || normalizedItem.numero === invoiceId || normalizedItem.codigoPago === invoiceId;
+          const matchesUser = !userId || String(normalizedItem.usuario_id || '') === String(userId) || String(normalizedItem.usuarioId || '') === String(userId);
+          return matchesId && matchesUser;
+        }) || null;
+      }
+
       async function resolveInvoice(userId, invoiceId) {
         const db = readDb();
 
-        if (db?.users) {
-          const user = db.users.find((item) => item.id === userId);
-          const invoice = (user?.facturas || []).find((item) => item.id === invoiceId || item.numero === invoiceId);
+        if (db?.users && Array.isArray(db.users)) {
+          const user = db.users.find((item) => String(item.id) === String(userId) || String(item.usuario_id) === String(userId));
+          const localInvoice = pickInvoiceFromCollection(user?.facturas || db.users.flatMap((entry) => entry.facturas || []), invoiceId, userId);
+
+          if (localInvoice) {
+            return { user: user || { id: userId, nombre: localInvoice.titular || 'Titular', plan: localInvoice.plan || 'Plan', poliza: 'PET-2026001' }, invoice: normalizeInvoice(localInvoice, user || {}) };
+          }
+        }
+
+        if (Array.isArray(db?.facturas)) {
+          const invoice = pickInvoiceFromCollection(db.facturas, invoiceId, userId);
           if (invoice) {
-            return { user, invoice };
+            const user = db.users?.find((item) => String(item.id) === String(userId) || String(item.usuario_id) === String(userId)) || { id: userId, nombre: invoice.titular || 'Titular', plan: invoice.plan || 'Plan', poliza: 'PET-2026001' };
+            return { user, invoice: normalizeInvoice(invoice, user) };
           }
         }
 
@@ -65,50 +121,51 @@
 
           const payload = await response.json();
           const facturas = Array.isArray(payload.facturas) ? payload.facturas : [];
-          const invoice = facturas.find((item) => item.id === invoiceId || item.numero === invoiceId) || null;
+          const invoice = pickInvoiceFromCollection(facturas, invoiceId, userId);
 
           if (invoice) {
-            const user = (db?.users || []).find((item) => item.id === userId) || {
+            const user = (db?.users || []).find((item) => String(item.id) === String(userId) || String(item.usuario_id) === String(userId)) || {
               id: userId,
               nombre: invoice.titular || 'Titular',
               plan: invoice.plan || 'Plan',
               poliza: 'PET-2026001',
+              dni: invoice.documento || 'CUIL 20-12345678-9'
             };
-
-            return { user, invoice };
+            return { user, invoice: normalizeInvoice(invoice, user) };
           }
         } catch (error) {
-          console.warn('No se pudo resolver la factura desde API, usando fallback local.', error);
+          console.warn('No se pudo resolver la factura desde la API:', error);
         }
 
         return null;
       }
 
       async function renderInvoice() {
-        const params = new URLSearchParams(window.location.search);
-        const invoiceId = params.get('id');
-        const userId = params.get('userId');
         const root = document.getElementById('invoice-root');
+        const invoiceId = getQueryParam('id') || getQueryParam('invoiceId');
+        const userId = getQueryParam('userId') || getQueryParam('usuario_id') || getQueryParam('uid');
 
         if (!userId || !invoiceId) {
-          root.innerHTML = '<div class="invoice-sheet"><h2>Factura no disponible</h2></div>';
+          root.innerHTML = '<div class="invoice-sheet"><h2>Factura no disponible</h2><p>Faltan los parámetros id y userId en la URL.</p></div>';
           return;
         }
 
         const resolved = await resolveInvoice(userId, invoiceId);
 
         if (!resolved) {
-          root.innerHTML = '<div class="invoice-sheet"><h2>Factura no disponible</h2></div>';
+          root.innerHTML = '<div class="invoice-sheet"><h2>Factura no disponible</h2><p>No se encontró la boleta solicitada.</p></div>';
           return;
         }
 
         const { user, invoice } = resolved;
         const isPaid = invoice.estado === 'pagada';
+        const docLabel = invoice.documento || user.dni || 'CUIL 20-12345678-9';
+        const total = Number(invoice.importe || 0);
 
         root.innerHTML = `
           <div class="invoice-toolbar no-print">
             <button type="button" class="secondary-btn" id="printBtn">Imprimir / Guardar PDF</button>
-            <button type="button" class="ghost-btn" id="closeBtn">Cerrar pestaña</button>
+            <button type="button" class="ghost-btn" id="closeBtn">Cerrar</button>
           </div>
 
           <div class="invoice-sheet" style="position: relative;">
@@ -136,7 +193,7 @@
                 </div>
                 <small>
                   ${invoice.numero || 'FC-C 0004-00018492'}<br />
-                  Fecha de emisión: ${invoice.fechaEmision || '2026-10-01'}<br />
+                  Fecha de emisión: ${invoice.fechaEmision || 'Sin fecha'}<br />
                   CAE: ${invoice.cae || '74429183920196'}
                 </small>
               </div>
@@ -145,19 +202,19 @@
             <div class="customer-strip">
               <div class="field-box">
                 <span>Cliente</span>
-                <strong>${invoice.titular || user.nombre}</strong>
+                <strong>${invoice.titular || user.nombre || 'Titular'}</strong>
               </div>
               <div class="field-box">
                 <span>Documento</span>
-                <strong>CUIL 20-12345678-9</strong>
+                <strong>${docLabel}</strong>
               </div>
               <div class="field-box">
                 <span>Póliza</span>
-                <strong>${user.poliza || 'PS-884120'}</strong>
+                <strong>${user.poliza || 'PET-2026001'}</strong>
               </div>
               <div class="field-box">
                 <span>Plan</span>
-                <strong>${invoice.plan || user.plan}</strong>
+                <strong>${invoice.plan || user.plan || 'Plan'}</strong>
               </div>
             </div>
 
@@ -173,9 +230,9 @@
               <tbody>
                 <tr>
                   <td>${invoice.concepto || 'Cobertura mensual'}</td>
-                  <td>${invoice.periodo || 'Octubre 2026'}</td>
-                  <td>${invoice.vencimiento || '14/10/2026'}</td>
-                  <td>$ ${formatMoney(invoice.importe || 0)}</td>
+                  <td>${invoice.periodo || 'Sin período'}</td>
+                  <td>${invoice.vencimiento || 'Sin vencimiento'}</td>
+                  <td>$ ${formatMoney(total)}</td>
                 </tr>
               </tbody>
             </table>
@@ -191,17 +248,21 @@
                   <span>Forma de pago</span>
                   <strong>${invoice.tipo || 'Rapipago / Pago Fácil'}</strong>
                 </div>
+                <div class="field-box" style="margin-top: 8px;">
+                  <span>CAE</span>
+                  <strong>${invoice.cae || '74429183920196'}</strong>
+                </div>
               </div>
 
               <div class="fiscal-card">
                 <h4>Totales</h4>
                 <div class="field-box">
                   <span>Subtotal</span>
-                  <strong>$ ${formatMoney(invoice.importe || 0)}</strong>
+                  <strong>$ ${formatMoney(total)}</strong>
                 </div>
                 <div class="field-box" style="margin-top: 8px;">
                   <span>Total</span>
-                  <strong>$ ${formatMoney(invoice.importe || 0)}</strong>
+                  <strong>$ ${formatMoney(total)}</strong>
                 </div>
               </div>
             </div>
@@ -212,11 +273,11 @@
               <div class="talon-grid">
                 <div class="talon-box">
                   <h5>Vencimiento</h5>
-                  <strong>${invoice.vencimiento || '10/10/2026'}</strong>
+                  <strong>${invoice.vencimiento || 'Sin vencimiento'}</strong>
                 </div>
                 <div class="talon-box">
                   <h5>Importe</h5>
-                  <strong>$ ${formatMoney(invoice.importe || 0)}</strong>
+                  <strong>$ ${formatMoney(total)}</strong>
                 </div>
                 <div class="talon-box">
                   <h5>Comprobante</h5>
@@ -226,7 +287,7 @@
 
               <div class="barcode-box" style="margin-top: 16px;">
                 <span class="barcode">${invoice.barCode || '0004000184922026101000450000071589421984210000184927'}</span>
-                <span class="barcode-number">${invoice.codigoPago || '000400018492'}</span>
+                <span class="barcode-number">${invoice.codigoPago || invoice.barCode || '000400018492'}</span>
               </div>
             </div>
           </div>
@@ -240,9 +301,7 @@
         }
 
         if (closeBtn) {
-          closeBtn.addEventListener('click', () => {
-            window.close();
-          });
+          closeBtn.addEventListener('click', () => window.close());
         }
       }
 

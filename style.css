@@ -952,9 +952,9 @@ button {
 
 .invoice-window {
   margin: 0;
-  padding: 16px;
+  padding: 20px 16px 40px;
   min-height: 100vh;
-  background: #eef3f7;
+  background: linear-gradient(180deg, #eef3f7 0%, #f8fafc 100%);
   color: var(--text);
   width: 100%;
   display: flex;
@@ -964,11 +964,11 @@ button {
   gap: 12px;
   box-sizing: border-box;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  overflow-x: hidden;
 }
 
 #invoice-root {
-  width: 100%;
-  max-width: 760px;
+  width: min(760px, 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -978,33 +978,34 @@ button {
 }
 
 .invoice-toolbar {
-  width: 100%;
-  max-width: 760px;
+  width: min(760px, 100%);
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 10px;
   background: transparent;
   border: none;
   box-shadow: none;
   padding: 0;
   margin: 0;
+  flex-wrap: wrap;
 }
 
 .invoice-toolbar .primary-btn,
-.invoice-toolbar .secondary-btn {
+.invoice-toolbar .secondary-btn,
+.invoice-toolbar .ghost-btn {
   font-size: 0.8rem;
   padding: 9px 12px;
 }
 
 .invoice-sheet {
-  width: 100%;
-  max-width: 760px;
+  width: min(760px, 100%);
   margin: 0 auto;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 12px 20px rgba(15, 23, 42, 0.06);
-  padding: 20px 28px;
+  padding: 22px 26px 24px;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
@@ -1012,11 +1013,12 @@ button {
 
 .invoice-header {
   display: grid;
-  grid-template-columns: 1.3fr 0.7fr 1fr;
+  grid-template-columns: minmax(0, 1.4fr) 0.7fr minmax(0, 1fr);
   gap: 18px;
   border-bottom: 2px solid var(--navy);
-  padding-bottom: 12px;
+  padding-bottom: 14px;
   margin-bottom: 18px;
+  align-items: center;
 }
 
 .company-block {
@@ -1030,6 +1032,13 @@ button {
   width: 56px;
   height: 56px;
   flex-shrink: 0;
+  background: rgba(11, 25, 44, 0.04);
+  border-color: rgba(11, 25, 44, 0.12);
+  color: var(--navy);
+}
+
+.company-meta {
+  min-width: 0;
 }
 
 .company-meta h2 {
@@ -1037,6 +1046,7 @@ button {
   font-size: 0.96rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  line-height: 1.4;
 }
 
 .company-meta p {
@@ -1062,6 +1072,7 @@ button {
   font-weight: 800;
   color: var(--navy);
   background: #fff;
+  border-radius: 6px;
 }
 
 .invoice-legal {
@@ -1095,6 +1106,7 @@ button {
   gap: 14px;
   background: #f8fafc;
   border: 1px solid var(--line);
+  border-radius: 6px;
   padding: 12px 14px;
   margin-bottom: 18px;
 }
@@ -1115,6 +1127,7 @@ button {
 
 .field-box strong {
   font-size: 0.92rem;
+  line-height: 1.5;
   word-break: break-word;
 }
 
@@ -1123,6 +1136,7 @@ button {
   border-collapse: collapse;
   margin-top: 10px;
   border: 1px solid var(--line);
+  table-layout: fixed;
 }
 
 .invoice-table th,
@@ -1132,7 +1146,9 @@ button {
   padding: 10px 8px;
   text-align: left;
   font-size: 0.8rem;
+  line-height: 1.5;
   word-break: break-word;
+  vertical-align: top;
 }
 
 .invoice-table th:last-child,
@@ -1236,6 +1252,7 @@ button {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: clip;
+  letter-spacing: 1px;
 }
 
 .barcode-number {
@@ -1276,6 +1293,56 @@ button {
   .fiscal-grid,
   .talon-grid {
     grid-template-columns: 1fr;
+  }
+
+  .invoice-legal {
+    text-align: left;
+  }
+
+  .invoice-legal-title {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 560px) {
+  .invoice-window {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .invoice-toolbar {
+    justify-content: stretch;
+  }
+
+  .invoice-toolbar .primary-btn,
+  .invoice-toolbar .secondary-btn,
+  .invoice-toolbar .ghost-btn {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .invoice-sheet {
+    padding: 16px 14px 18px;
+  }
+
+  .company-block {
+    align-items: flex-start;
+  }
+
+  .company-meta h2 {
+    font-size: 0.82rem;
+  }
+
+  .invoice-code-box {
+    width: 68px;
+    height: 68px;
+    font-size: 1.7rem;
+  }
+
+  .invoice-table th,
+  .invoice-table td {
+    font-size: 0.72rem;
+    padding: 8px 6px;
   }
 }
 
