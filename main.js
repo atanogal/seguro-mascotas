@@ -9,7 +9,19 @@ const state = {
   activeSection: 'general',
   adminStateFilter: 'todos',
   adminPlanFilter: 'todos',
-  flash: { type: '', text: '' }
+  flash: { type: '', text: '' },
+  veterinaryDirectory: {
+    ready: false,
+    loading: false,
+    error: '',
+    clinics: [],
+    benefits: [],
+    filters: {
+      availability: 'todos',
+      location: 'todos',
+      service: 'todos'
+    }
+  }
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -46,13 +58,22 @@ async function ensureSeedData() {
     console.error('No se pudo cargar mockData.json:', error);
     const fallback = normalizeDbState({
       plans: [
-        { id: 'Basico', nombre: 'Plan Básico', precio: 15000, descripcion: 'Vacunas y guardia 24hs.', cobertura: ['Vacunas', 'Guardia veterinaria 24hs'], tope: 'Hasta $120.000', servicios: ['Vacunación', 'Hospitalización básica'] },
-        { id: 'Completo', nombre: 'Plan Completo', precio: 28000, descripcion: 'Cobertura ampliada.', cobertura: ['Cirugías', 'Estudios de diagnóstico'], tope: 'Hasta $250.000', servicios: ['Cirugías', 'Diagnósticos', 'Consultas'] },
-        { id: 'Premium', nombre: 'Plan Premium', precio: 42000, descripcion: 'Cobertura total 100%.', cobertura: ['Internación', 'Farmacia', 'Atención prioritaria'], tope: 'Sin tope', servicios: ['Internación', 'Farmacia', 'Urgencias 24hs'] }
+        { id: 'Basico', nombre: 'Plan Básico', precio: 15000, descripcion: 'Vacunas y guardia 24hs.', cobertura: ['Vacunas', 'Guardia veterinaria 24hs'], tope: 'Hasta $120.000', servicios: ['Vacunación', 'Hospitalización básica'], copago: '20% sobre estudios y cirugías' },
+        { id: 'Completo', nombre: 'Plan Completo', precio: 28000, descripcion: 'Cobertura ampliada.', cobertura: ['Cirugías', 'Estudios de diagnóstico'], tope: 'Hasta $250.000', servicios: ['Cirugías', 'Diagnósticos', 'Consultas'], copago: '10% sobre procedimientos complejos' },
+        { id: 'Premium', nombre: 'Plan Premium', precio: 42000, descripcion: 'Cobertura total 100%.', cobertura: ['Internación', 'Farmacia', 'Atención prioritaria'], tope: 'Sin tope', servicios: ['Internación', 'Farmacia', 'Urgencias 24hs'], copago: 'Sin copago' },
+        { id: 'Multimascota', nombre: 'Plan Multimascota', precio: 36000, descripcion: 'Cobertura para hogares con varias mascotas.', cobertura: ['2 o más mascotas', 'Descuentos corporativos', 'Urgencias 24hs'], tope: 'Hasta $400.000', servicios: ['Atención familiar', 'Urgencias 24hs', 'Beneficios de red'], copago: '15% en tratamientos complejos' }
+      ],
+      red_veterinarias: [
+        { id: 'vet-1', nombre: 'Clínica Veterinaria del Sur', direccion: 'Av. Rivadavia 5500, CABA', disponibilidad: '24 hs', servicios: ['Urgencias', 'Hospitalización', 'Cirugías'] },
+        { id: 'vet-2', nombre: 'Animal Care Las Flores', direccion: 'Calle 9 de Julio 1800, Buenos Aires', disponibilidad: '24 hs', servicios: ['Atención continua', 'Laboratorio'] }
+      ],
+      beneficios: [
+        { id: 'benef-1', nombre: 'Descuentos en alimentos', descripcion: 'Hasta 20% off en marcas líderes.', tipo: 'Alimentos' },
+        { id: 'benef-2', nombre: 'Farmacias asociadas', descripcion: 'Descuentos en medicamentos y productos veterinarios.', tipo: 'Farmacia' }
       ],
       users: [
-        { id: 'admin-1', nombre: 'Administrador PetSafe', email: 'admin@petsafe.com', password: 'admin123', telefono: '+54 11 4000-0000', rol: 'admin', estado: 'aprobado', plan: 'Premium', facturas: [] },
-        { id: 'user-1', nombre: 'María López', email: 'usuario@petsafe.com', password: 'user123', telefono: '+54 11 2233-3333', rol: 'usuario', estado: 'aprobado', plan: 'Premium', poliza: 'PET-2026001', dni: '20-12345678-9', mascotas: [{ id: 'pet-1', nombre: 'Luna', especie: 'Perro', edad: 3 }], facturas: [{ id: 'fac-00018490', numero: 'FC-C 0004-00018490', periodo: 'Agosto 2026', concepto: 'Cobertura Plan Premium - Póliza #PET-2026001', vencimiento: '10/08/2026', importe: 42000, estado: 'pagada', cae: '74429183920194', barCode: '0004000184902026081000450000071589421984210000184927', fechaEmision: '2026-08-01', codigoPago: '000400018490' }, { id: 'fac-00018491', numero: 'FC-C 0004-00018491', periodo: 'Septiembre 2026', concepto: 'Cobertura Plan Premium - Póliza #PET-2026001', vencimiento: '10/09/2026', importe: 42000, estado: 'pagada', cae: '74429183920195', barCode: '0004000184912026091000450000071589421984210000184927', fechaEmision: '2026-09-01', codigoPago: '000400018491' }, { id: 'fac-00018492', numero: 'FC-C 0004-00018492', periodo: 'Octubre 2026', concepto: 'Cobertura Plan Premium - Póliza #PET-2026001', vencimiento: '10/10/2026', importe: 42000, estado: 'pendiente', cae: '74429183920196', barCode: '0004000184922026101000450000071589421984210000184927', fechaEmision: '2026-10-01', codigoPago: '000400018492' }] }
+        { id: 'admin-1', nombre: 'Administrador PetSafe', email: 'admin@petsafe.com', password: 'admin123', telefono: '+54 11 4000-0000', rol: 'admin', estado: 'aprobado', plan: 'Premium', plan_id: 'Premium', facturas: [] },
+        { id: 'user-1', nombre: 'María López', email: 'usuario@petsafe.com', password: 'user123', telefono: '+54 11 2233-3333', rol: 'usuario', estado: 'aprobado', plan: 'Premium', plan_id: 'Premium', poliza: 'PET-2026001', dni: '20-12345678-9', mascotas: [{ id: 'pet-1', nombre: 'Luna', especie: 'Perro', edad: 3 }], facturas: [{ id: 'fac-00018490', numero: 'FC-C 0004-00018490', periodo: 'Agosto 2026', concepto: 'Cobertura Plan Premium - Póliza #PET-2026001', vencimiento: '10/08/2026', importe: 42000, estado: 'pagada', cae: '74429183920194', barCode: '0004000184902026081000450000071589421984210000184927', fechaEmision: '2026-08-01', codigoPago: '000400018490' }, { id: 'fac-00018491', numero: 'FC-C 0004-00018491', periodo: 'Septiembre 2026', concepto: 'Cobertura Plan Premium - Póliza #PET-2026001', vencimiento: '10/09/2026', importe: 42000, estado: 'pagada', cae: '74429183920195', barCode: '0004000184912026091000450000071589421984210000184927', fechaEmision: '2026-09-01', codigoPago: '000400018491' }, { id: 'fac-00018492', numero: 'FC-C 0004-00018492', periodo: 'Octubre 2026', concepto: 'Cobertura Plan Premium - Póliza #PET-2026001', vencimiento: '10/10/2026', importe: 42000, estado: 'pendiente', cae: '74429183920196', barCode: '0004000184922026101000450000071589421984210000184927', fechaEmision: '2026-10-01', codigoPago: '000400018492' }] }
       ]
     });
     writeDb(fallback);
@@ -61,9 +82,24 @@ async function ensureSeedData() {
 }
 
 function normalizeDbState(data) {
-  const plans = Array.isArray(data?.plans) ? data.plans : [];
+  const plans = Array.isArray(data?.plans)
+    ? data.plans.map((plan) => ({
+        ...plan,
+        id: String(plan.id || plan.nombre || 'plan'),
+        nombre: plan.nombre || plan.id || 'Plan',
+        precio: Number(plan.precio || 0),
+        cobertura: Array.isArray(plan.cobertura) ? plan.cobertura : Array.isArray(plan.servicios) ? plan.servicios : [],
+        servicios: Array.isArray(plan.servicios) ? plan.servicios : Array.isArray(plan.cobertura) ? plan.cobertura : [],
+        copago: plan.copago || plan.copagos || 'Sin copago'
+      }))
+    : [];
+
+  const red_veterinarias = Array.isArray(data?.red_veterinarias) ? data.red_veterinarias : [];
+  const beneficios = Array.isArray(data?.beneficios) ? data.beneficios : [];
   const users = Array.isArray(data?.users) ? data.users.map((user) => ({
     ...user,
+    plan_id: user.plan_id || user.plan || null,
+    plan: user.plan || user.plan_id || (plans[0] && plans[0].id) || 'Basico',
     dni: user.dni || '',
     facturas: Array.isArray(user.facturas) ? user.facturas.map((invoice) => ({
       ...invoice,
@@ -71,10 +107,15 @@ function normalizeDbState(data) {
       importe: Number(invoice.importe || 0),
       apunte: invoice.apunte || 'Cobertura mensual'
     })) : [],
-    mascotas: Array.isArray(user.mascotas) ? user.mascotas : []
+    mascotas: Array.isArray(user.mascotas) ? user.mascotas.map((pet) => ({
+      ...pet,
+      nombre: pet.nombre || 'Mascota',
+      especie: pet.especie || 'Perro',
+      edad: Number(pet.edad || 0)
+    })) : []
   })) : [];
 
-  return { plans, users };
+  return { plans, users, red_veterinarias, beneficios };
 }
 
 function readDb() {
@@ -179,6 +220,25 @@ async function refreshStateFromApi() {
   return readDb();
 }
 
+async function syncUserInvoices(userId) {
+  if (!userId) return;
+
+  try {
+    const payload = await requestJson(`/api/facturas?userId=${encodeURIComponent(userId)}`);
+    const invoices = Array.isArray(payload.facturas) ? payload.facturas : [];
+    const db = readDb();
+    if (!db || !Array.isArray(db.users)) return;
+
+    const user = db.users.find((item) => item.id === userId);
+    if (!user) return;
+
+    user.facturas = invoices;
+    writeDb(db);
+  } catch (error) {
+    console.warn('No se pudo refrescar las facturas del usuario:', error.message);
+  }
+}
+
 function setFlash(type, text) {
   state.flash = { type, text };
 }
@@ -273,6 +333,7 @@ function renderAuthScreen() {
                     <option value="">Seleccioná</option>
                     <option value="Perro">Perro</option>
                     <option value="Gato">Gato</option>
+                    <option value="No convencional">Mascota no convencional</option>
                   </select></div>
                   <div class="field"><label for="signupEdad">Edad</label><input id="signupEdad" name="edad" type="number" min="0" max="25" required /></div>
                 </div>
@@ -313,6 +374,7 @@ function renderAdminApp() {
           <button type="button" class="nav-item ${state.adminTab === 'general' ? 'active' : ''}" data-action="select-admin-tab" data-admin-tab="general">Panel general</button>
           <button type="button" class="nav-item ${state.adminTab === 'solicitudes' ? 'active' : ''}" data-action="select-admin-tab" data-admin-tab="solicitudes">Solicitudes</button>
           <button type="button" class="nav-item ${state.adminTab === 'coberturas' ? 'active' : ''}" data-action="select-admin-tab" data-admin-tab="coberturas">Coberturas</button>
+          <button type="button" class="nav-item ${state.adminTab === 'veterinarias' ? 'active' : ''}" data-action="select-admin-tab" data-admin-tab="veterinarias">Red de Veterinarias</button>
           <button type="button" class="nav-item ${state.adminTab === 'cobranzas' ? 'active' : ''}" data-action="select-admin-tab" data-admin-tab="cobranzas">Cobranzas</button>
         </div>
         <div class="sidebar-footer">
@@ -438,6 +500,48 @@ function renderAdminTabContent({ pendingUsers, activeUsers, rejectedUsers, allRe
     `;
   }
 
+  if (state.adminTab === 'veterinarias') {
+    const clinics = Array.isArray(db.red_veterinarias) ? db.red_veterinarias : [];
+
+    return `
+      <section class="tab-panel active">
+        <div class="admin-vet-layout">
+          <div class="panel admin-vet-form-panel">
+            <div class="panel-header"><h2>Alta de clínica</h2></div>
+            <form id="adminClinicForm" class="signup-form">
+              <div class="field"><label for="adminClinicNombre">Nombre</label><input id="adminClinicNombre" name="nombre" type="text" required /></div>
+              <div class="field"><label for="adminClinicDireccion">Dirección</label><input id="adminClinicDireccion" name="direccion" type="text" required /></div>
+              <div class="field"><label for="adminClinicTelefono">Teléfono</label><input id="adminClinicTelefono" name="telefono" type="tel" required /></div>
+              <div class="field"><label for="adminClinicHorario">Horario</label><input id="adminClinicHorario" name="horario" type="text" placeholder="Lunes a Domingo - 24 hs" required /></div>
+              <div class="field"><label for="adminClinicDisponibilidad">Disponibilidad 24hs</label><select id="adminClinicDisponibilidad" name="disponibilidad_24hs"><option value="24 hs">24 hs</option><option value="Urgencias">Urgencias</option><option value="Atención continua">Atención continua</option></select></div>
+              <button type="submit" class="primary-btn">Guardar clínica</button>
+            </form>
+          </div>
+
+          <div class="panel admin-vet-list-panel">
+            <div class="panel-header"><h2>Red de veterinarias</h2><span class="status-badge success">${clinics.length} clínicas</span></div>
+            <div class="admin-vet-list">
+              ${clinics.length ? clinics.map((clinic) => `
+                <article class="clinic-card admin-clinic-row">
+                  <div class="clinic-card-header">
+                    <strong>${clinic.nombre || 'Clínica sin nombre'}</strong>
+                    <span class="tag">${clinic.disponibilidad || clinic.disponibilidad_24hs || '24 hs'}</span>
+                  </div>
+                  <div class="muted">${clinic.direccion || 'Sin dirección registrada'}</div>
+                  <div class="muted"><strong>Horario:</strong> ${clinic.horario || 'Sin horario'}</div>
+                  <div class="muted"><strong>Teléfono:</strong> ${clinic.telefono || 'Sin teléfono'}</div>
+                  <div class="clinic-services">
+                    ${(Array.isArray(clinic.servicios) ? clinic.servicios : ['Consulta general', 'Urgencias']).map((service) => `<span class="mini-tag">${service}</span>`).join('')}
+                  </div>
+                </article>
+              `).join('') : '<div class="empty-state">Todavía no hay clínicas registradas.</div>'}
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
   return `
     <section class="tab-panel active">
       <div class="panel">
@@ -495,6 +599,14 @@ function renderUserApp() {
   const invoices = Array.isArray(user.facturas) ? user.facturas : [];
   const pendingCount = invoices.filter((invoice) => invoice.estado === 'pendiente').length;
 
+  if (currentUser && state.userTab === 'facturacion') {
+    void syncUserInvoices(currentUser.id);
+  }
+
+  if (state.userTab === 'veterinarias' && !state.veterinaryDirectory.ready && !state.veterinaryDirectory.loading) {
+    void loadVeterinaryDirectory();
+  }
+
   return `
     <div class="app-shell">
       <aside class="sidebar">
@@ -502,6 +614,7 @@ function renderUserApp() {
         <div class="nav-list">
           <button type="button" class="nav-item ${state.userTab === 'cuenta' ? 'active' : ''}" data-action="select-user-tab" data-user-tab="cuenta">Mi cuenta</button>
           <button type="button" class="nav-item ${state.userTab === 'cobertura' ? 'active' : ''}" data-action="select-user-tab" data-user-tab="cobertura">Cobertura</button>
+          <button type="button" class="nav-item ${state.userTab === 'veterinarias' ? 'active' : ''}" data-action="select-user-tab" data-user-tab="veterinarias">Red veterinarias</button>
           <button type="button" class="nav-item ${state.userTab === 'facturacion' ? 'active' : ''}" data-action="select-user-tab" data-user-tab="facturacion">Facturación</button>
           <button type="button" class="nav-item ${state.userTab === 'mascotas' ? 'active' : ''}" data-action="select-user-tab" data-user-tab="mascotas">Mascotas</button>
         </div>
@@ -526,8 +639,49 @@ function renderUserApp() {
   `;
 }
 
+function getClinicLocationLabel(clinic = {}) {
+  const text = `${clinic.direccion || ''} ${clinic.localidad || ''} ${clinic.zona || ''}`.toLowerCase();
+  if (text.includes('caba') || text.includes('capital')) return 'CABA';
+  if (text.includes('buenos aires')) return 'Buenos Aires';
+  if (text.includes('flores')) return 'Flores';
+  if (text.includes('sur')) return 'Zona Sur';
+  return 'General';
+}
+
+function getFilteredClinics() {
+  const { clinics, filters } = state.veterinaryDirectory;
+
+  return (clinics || []).filter((clinic) => {
+    const availability = String(clinic.disponibilidad || '24 hs').toLowerCase();
+    const services = Array.isArray(clinic.servicios) ? clinic.servicios : [];
+    const location = getClinicLocationLabel(clinic);
+    const normalizedLocation = location.toLowerCase();
+
+    if (filters.availability !== 'todos' && availability !== filters.availability.toLowerCase()) {
+      return false;
+    }
+
+    if (filters.location !== 'todos' && normalizedLocation !== filters.location.toLowerCase()) {
+      return false;
+    }
+
+    if (filters.service !== 'todos') {
+      const serviceMatch = services.some((service) => service.toLowerCase().includes(filters.service.toLowerCase()));
+      if (!serviceMatch) return false;
+    }
+
+    return true;
+  });
+}
+
 function renderUserTabContent({ user, plan, invoices, pendingCount, db }) {
   if (state.userTab === 'cuenta') {
+    const speciesSummary = (user.mascotas || []).reduce((acc, pet) => {
+      const key = pet.especie || 'Perro';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
     return `
       <section class="tab-panel active">
         <div class="content-grid">
@@ -543,6 +697,14 @@ function renderUserTabContent({ user, plan, invoices, pendingCount, db }) {
                   <li><strong>Teléfono:</strong> ${user.telefono || 'Sin teléfono'}</li>
                   <li><strong>N° de Póliza:</strong> ${user.poliza || 'En trámite'}</li>
                   <li><strong>Estado:</strong> ${capitalize(user.estado || 'aprobado')}</li>
+                </ul>
+              </div>
+              <div class="info-box">
+                <h3>Hogares Multimascota</h3>
+                <ul>
+                  <li><strong>Mascotas registradas:</strong> ${(user.mascotas || []).length}</li>
+                  <li><strong>Categorías:</strong> ${Object.keys(speciesSummary).length ? Object.entries(speciesSummary).map(([species, count]) => `${species} (${count})`).join(', ') : 'Sin mascotas'} </li>
+                  <li><strong>Plan vigente:</strong> ${plan.nombre}</li>
                 </ul>
               </div>
             </div>
@@ -562,6 +724,7 @@ function renderUserTabContent({ user, plan, invoices, pendingCount, db }) {
 
   if (state.userTab === 'cobertura') {
     const otherPlans = (db.plans || []).filter((item) => item.id !== user.plan);
+
     return `
       <section class="tab-panel active">
         <div class="panel">
@@ -571,6 +734,7 @@ function renderUserTabContent({ user, plan, invoices, pendingCount, db }) {
               <strong>${plan.nombre}</strong>
               <div class="muted">${plan.descripcion || 'Cobertura mensual'}</div>
               <div class="price-tag">$ ${formatMoney(plan.precio || 0)}</div>
+              <div class="muted"><strong>Copago:</strong> ${plan.copago || 'Sin copago'}</div>
               <ul>${(plan.cobertura || []).map((item) => `<li>${item}</li>`).join('')}</ul>
             </div>
             <div class="content-grid">
@@ -579,10 +743,103 @@ function renderUserTabContent({ user, plan, invoices, pendingCount, db }) {
                   <strong>${planOption.nombre}</strong>
                   <div class="muted">${planOption.descripcion}</div>
                   <div class="price-tag">$ ${formatMoney(planOption.precio)}</div>
+                  <div class="muted"><strong>Copago:</strong> ${planOption.copago || 'Sin copago'}</div>
                   <button type="button" class="secondary-btn" data-action="change-plan" data-plan-id="${planOption.id}">Solicitar Cambio de Plan</button>
                   <ul>${(planOption.cobertura || []).map((item) => `<li>${item}</li>`).join('')}</ul>
                 </div>
               `).join('')}
+            </div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  if (state.userTab === 'veterinarias') {
+    const directory = state.veterinaryDirectory;
+    const clinics = getFilteredClinics();
+    const benefits = directory.benefits || [];
+    const locations = [...new Set((directory.clinics || []).map((clinic) => getClinicLocationLabel(clinic)))];
+    const services = [...new Set((directory.clinics || []).flatMap((clinic) => Array.isArray(clinic.servicios) ? clinic.servicios : []))];
+
+    return `
+      <section class="tab-panel active">
+        <div class="content-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <h2>Red de Veterinarias y Cobertura</h2>
+              <span class="status-badge success">${clinics.length} clínicas</span>
+            </div>
+
+            <div class="directory-toolbar">
+              <div class="field">
+                <label>Disponibilidad</label>
+                <select data-filter="veterinary-availability">
+                  <option value="todos" ${state.veterinaryDirectory.filters.availability === 'todos' ? 'selected' : ''}>Todas</option>
+                  <option value="24 hs" ${state.veterinaryDirectory.filters.availability === '24 hs' ? 'selected' : ''}>24 hs</option>
+                  <option value="urgencias" ${state.veterinaryDirectory.filters.availability === 'urgencias' ? 'selected' : ''}>Urgencias</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Ubicación</label>
+                <select data-filter="veterinary-location">
+                  <option value="todos" ${state.veterinaryDirectory.filters.location === 'todos' ? 'selected' : ''}>Todas</option>
+                  ${locations.map((location) => `<option value="${location}" ${state.veterinaryDirectory.filters.location === location ? 'selected' : ''}>${location}</option>`).join('')}
+                </select>
+              </div>
+              <div class="field">
+                <label>Servicio</label>
+                <select data-filter="veterinary-service">
+                  <option value="todos" ${state.veterinaryDirectory.filters.service === 'todos' ? 'selected' : ''}>Todos</option>
+                  ${services.map((service) => `<option value="${service}" ${state.veterinaryDirectory.filters.service === service ? 'selected' : ''}>${service}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+
+            ${directory.loading ? '<div class="loading-card">Cargando red veterinaria y coberturas...</div>' : ''}
+            ${directory.error ? `<div class="error-banner">${directory.error}</div>` : ''}
+
+            <div class="directory-grid">
+              ${clinics.length ? clinics.map((clinic) => `
+                <article class="clinic-card">
+                  <div class="clinic-card-header">
+                    <strong>${clinic.nombre}</strong>
+                    <span class="tag">${clinic.disponibilidad || '24 hs'}</span>
+                  </div>
+                  <div class="muted">${clinic.direccion || 'Sin dirección registrada'}</div>
+                  <div class="muted"><strong>Ubicación:</strong> ${getClinicLocationLabel(clinic)}</div>
+                  <div class="clinic-services">
+                    ${(clinic.servicios || []).map((service) => `<span class="mini-tag">${service}</span>`).join('')}
+                  </div>
+                  ${clinic.telefono ? `<div class="clinic-contact">${clinic.telefono}</div>` : ''}
+                </article>
+              `).join('') : '<div class="empty-state">No hay clínicas para los filtros seleccionados.</div>'}
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header"><h2>Resumen de cobertura</h2></div>
+            <div class="summary-stack">
+              <div class="plan-card active">
+                <strong>${plan.nombre}</strong>
+                <div class="muted">${plan.descripcion || 'Cobertura mensual'}</div>
+                <div class="price-tag">$ ${formatMoney(plan.precio || 0)}</div>
+                <div class="muted"><strong>Copago:</strong> ${plan.copago || 'Sin copago'}</div>
+                <ul>${(plan.cobertura || []).map((item) => `<li>${item}</li>`).join('')}</ul>
+              </div>
+
+              <div class="info-box">
+                <h3>Beneficios corporativos</h3>
+                <div class="benefit-list">
+                  ${(benefits.length ? benefits : [{ nombre: 'Descuentos en alimentos', descripcion: 'Beneficios exclusivos para alimentación y farmacia', tipo: 'Aliado' }]).map((benefit) => `
+                    <div class="benefit-item">
+                      <strong>${benefit.nombre}</strong>
+                      <span>${benefit.tipo || 'Aliado'}</span>
+                      <p>${benefit.descripcion || 'Beneficio asociado a la cobertura.'}</p>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -641,10 +898,14 @@ function renderUserTabContent({ user, plan, invoices, pendingCount, db }) {
               <div class="muted">N° de Credencial: ${pet.id || 'N/A'}</div>
             </div>
           `).join('') : '<div class="empty-state">No hay mascotas registradas.</div>'}
+          <div class="info-box" style="margin-top: 12px;">
+            <h3>Hogar multimascota</h3>
+            <p class="muted">Podés registrar varias mascotas bajo el mismo perfil y distinguir entre Perros, Gatos y mascotas no convencionales.</p>
+          </div>
           <form id="addPetForm" class="add-pet-form" style="margin-top: 12px;">
             <div class="form-grid">
               <div class="field"><label for="petNombre">Nombre de la Mascota</label><input id="petNombre" name="petNombre" type="text" required /></div>
-              <div class="field"><label for="petEspecie">Especie</label><select id="petEspecie" name="petEspecie" required><option value="">Seleccioná</option><option value="Perro">Perro</option><option value="Gato">Gato</option></select></div>
+              <div class="field"><label for="petEspecie">Especie</label><select id="petEspecie" name="petEspecie" required><option value="">Seleccioná</option><option value="Perro">Perro</option><option value="Gato">Gato</option><option value="No convencional">Mascota no convencional</option></select></div>
               <div class="field"><label for="petEdad">Edad</label><input id="petEdad" name="petEdad" type="number" min="0" max="25" required /></div>
             </div>
             <button type="submit" class="primary-btn">Agregar Mascota Adicional</button>
@@ -867,11 +1128,128 @@ async function handleAppSubmit(event) {
     setFlash('success', 'Los datos de contacto fueron actualizados correctamente.');
     renderApp();
   }
+
+  if (event.target.matches('#adminClinicForm')) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const nombre = String(formData.get('nombre') || '').trim();
+    const direccion = String(formData.get('direccion') || '').trim();
+    const telefono = String(formData.get('telefono') || '').trim();
+    const horario = String(formData.get('horario') || '').trim();
+    const disponibilidad = String(formData.get('disponibilidad_24hs') || '24 hs').trim();
+
+    if (!nombre || !direccion || !telefono || !horario) {
+      setFlash('error', 'Completá nombre, dirección, teléfono y horario para registrar la clínica.');
+      renderApp();
+      return;
+    }
+
+    try {
+      const payload = await requestJson('/api/red-veterinarias', {
+        method: 'POST',
+        body: JSON.stringify({
+          nombre,
+          direccion,
+          telefono,
+          horario,
+          disponibilidad_24hs: disponibilidad,
+          disponibilidad,
+          servicios: ['Urgencias', 'Consulta general']
+        })
+      });
+
+      const db = readDb() || { plans: [], users: [], red_veterinarias: [], beneficios: [] };
+      db.red_veterinarias = Array.isArray(db.red_veterinarias) ? db.red_veterinarias : [];
+      if (payload?.clinic) {
+        db.red_veterinarias.unshift({
+          ...payload.clinic,
+          disponibilidad: payload.clinic.disponibilidad || payload.clinic.disponibilidad_24hs || disponibilidad,
+          disponibilidad_24hs: payload.clinic.disponibilidad_24hs || payload.clinic.disponibilidad || disponibilidad
+        });
+      }
+      writeDb(db);
+      state.veterinaryDirectory.clinics = db.red_veterinarias;
+      event.target.reset();
+      setFlash('success', 'La clínica fue registrada correctamente.');
+      renderApp();
+    } catch (error) {
+      setFlash('error', error.message || 'No se pudo registrar la clínica.');
+      renderApp();
+    }
+  }
 }
 
 function handleAppChange(event) {
   if (event.target.matches('#adminPlanFilter') || event.target.matches('[data-filter="admin-plan"]')) {
     state.adminPlanFilter = event.target.value;
+    renderApp();
+    return;
+  }
+
+  if (event.target.matches('[data-filter="veterinary-availability"]')) {
+    state.veterinaryDirectory.filters.availability = event.target.value;
+    renderApp();
+    return;
+  }
+
+  if (event.target.matches('[data-filter="veterinary-location"]')) {
+    state.veterinaryDirectory.filters.location = event.target.value;
+    renderApp();
+    return;
+  }
+
+  if (event.target.matches('[data-filter="veterinary-service"]')) {
+    state.veterinaryDirectory.filters.service = event.target.value;
+    renderApp();
+  }
+}
+
+async function loadVeterinaryDirectory() {
+  state.veterinaryDirectory.loading = true;
+  state.veterinaryDirectory.error = '';
+  renderApp();
+
+  try {
+    const payload = await requestJson('/api/red-veterinarias', { method: 'GET' });
+    const clinics = Array.isArray(payload.red_veterinarias) ? payload.red_veterinarias : [];
+    const benefits = Array.isArray(payload.beneficios) ? payload.beneficios : [];
+
+    state.veterinaryDirectory = {
+      ...state.veterinaryDirectory,
+      ready: true,
+      loading: false,
+      error: '',
+      clinics,
+      benefits,
+      filters: {
+        availability: state.veterinaryDirectory.filters.availability || 'todos',
+        location: state.veterinaryDirectory.filters.location || 'todos',
+        service: state.veterinaryDirectory.filters.service || 'todos'
+      }
+    };
+
+    if (!clinics.length && !benefits.length) {
+      const db = readDb() || { red_veterinarias: [], beneficios: [] };
+      state.veterinaryDirectory.clinics = db.red_veterinarias || [];
+      state.veterinaryDirectory.benefits = db.beneficios || [];
+    }
+
+    renderApp();
+  } catch (error) {
+    const db = readDb() || { red_veterinarias: [], beneficios: [] };
+    state.veterinaryDirectory = {
+      ready: true,
+      loading: false,
+      error: 'No se pudo cargar la red veterinaria. Se utilizó la información local disponible.',
+      clinics: db.red_veterinarias || [],
+      benefits: db.beneficios || [],
+      filters: {
+        availability: 'todos',
+        location: 'todos',
+        service: 'todos'
+      }
+    };
+
     renderApp();
   }
 }

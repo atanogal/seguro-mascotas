@@ -660,6 +660,114 @@ button {
   min-height: 0;
 }
 
+.directory-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.clinic-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.clinic-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tag,
+.mini-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(11, 25, 44, 0.06);
+  color: var(--navy);
+}
+
+.clinic-services,
+.benefit-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mini-tag {
+  background: rgba(21, 128, 61, 0.08);
+  color: var(--success);
+}
+
+.clinic-contact {
+  color: var(--steel);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.benefit-item {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel-soft);
+}
+
+.benefit-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.benefit-item span {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.benefit-item p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.loading-card,
+.error-banner {
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+}
+
+.loading-card {
+  background: #f8fafc;
+  color: var(--muted);
+}
+
+.error-banner {
+  background: var(--danger-soft);
+  border-color: rgba(180, 35, 24, 0.2);
+  color: var(--danger);
+}
+
 .info-box {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -717,6 +825,32 @@ button {
   padding-left: 18px;
   color: var(--muted);
   line-height: 1.9;
+}
+
+.admin-vet-layout {
+  display: grid;
+  grid-template-columns: minmax(310px, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  min-height: 0;
+  flex: 1;
+}
+
+.admin-vet-form-panel,
+.admin-vet-list-panel {
+  min-height: 0;
+}
+
+.admin-vet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: auto;
+  min-height: 0;
+  padding-right: 4px;
+}
+
+.admin-clinic-row {
+  flex-shrink: 0;
 }
 
 .empty-state {

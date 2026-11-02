@@ -10,7 +10,8 @@
         "Guardia veterinaria 24hs",
         "Consulta médica general",
         "Asistencia de urgencia básica"
-      ]
+      ],
+      "copago": "20% sobre estudios y cirugías"
     },
     {
       "id": "Completo",
@@ -23,7 +24,8 @@
         "Estudios de diagnóstico",
         "Hospitalización clínica",
         "Revisiones preventivas"
-      ]
+      ],
+      "copago": "10% sobre procedimientos complejos"
     },
     {
       "id": "Premium",
@@ -36,7 +38,51 @@
         "Farmacia y medicamentos",
         "Cirugías, estudios y rehabilitación",
         "Atención prioritaria y cobertura máxima"
-      ]
+      ],
+      "copago": "Sin copago"
+    },
+    {
+      "id": "Multimascota",
+      "nombre": "Plan Multimascota",
+      "precio": 36000,
+      "descripcion": "Cobertura ideal para hogares con dos o más mascotas, con beneficios adicionales.",
+      "cobertura": [
+        "Cobertura para 2 o más mascotas",
+        "Descuentos corporativos en alimento y farmacia",
+        "Urgencias veterinarias 24hs",
+        "Cobertura familiar para múltiples animales"
+      ],
+      "copago": "15% en procedimientos complejos"
+    }
+  ],
+  "red_veterinarias": [
+    {
+      "id": "vet-1",
+      "nombre": "Clínica Veterinaria del Sur",
+      "direccion": "Av. Rivadavia 5500, CABA",
+      "disponibilidad": "24 hs",
+      "servicios": ["Urgencias", "Hospitalización", "Cirugías"]
+    },
+    {
+      "id": "vet-2",
+      "nombre": "Animal Care Las Flores",
+      "direccion": "Calle 9 de Julio 1800, Buenos Aires",
+      "disponibilidad": "24 hs",
+      "servicios": ["Atención continua", "Farmacia", "Laboratorio"]
+    }
+  ],
+  "beneficios": [
+    {
+      "id": "benef-1",
+      "nombre": "Descuentos en alimentos",
+      "descripcion": "Hasta 20% off en marcas líderes.",
+      "tipo": "Alimentos"
+    },
+    {
+      "id": "benef-2",
+      "nombre": "Farmacias asociadas",
+      "descripcion": "Descuentos en medicamentos y productos veterinarios.",
+      "tipo": "Farmacia"
     }
   ],
   "users": [
@@ -60,6 +106,7 @@
       "rol": "usuario",
       "estado": "aprobado",
       "plan": "Premium",
+      "plan_id": "Premium",
       "poliza": "PS-884120",
       "mascotas": [
         {
@@ -132,6 +179,7 @@
       "rol": "usuario",
       "estado": "pendiente",
       "plan": "Basico",
+      "plan_id": "Basico",
       "poliza": null,
       "mascotas": [
         {
@@ -152,6 +200,7 @@
       "rol": "usuario",
       "estado": "pendiente",
       "plan": "Premium",
+      "plan_id": "Premium",
       "poliza": null,
       "mascotas": [
         {

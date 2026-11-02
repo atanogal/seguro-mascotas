@@ -1,0 +1,241 @@
+{
+  "plans": [
+    {
+      "id": "Basico",
+      "nombre": "Plan Básico",
+      "precio": 15000,
+      "descripcion": "Cobertura esencial para vacunas y guardia veterinaria 24hs.",
+      "cobertura": [
+        "Vacunas y desparasitación",
+        "Guardia veterinaria 24hs",
+        "Consulta médica general",
+        "Asistencia de urgencia básica"
+      ],
+      "servicios": [
+        "Vacunas y desparasitación",
+        "Guardia veterinaria 24hs",
+        "Consulta médica general",
+        "Asistencia de urgencia básica"
+      ],
+      "copago": "Sin copago"
+    },
+    {
+      "id": "Completo",
+      "nombre": "Plan Completo",
+      "precio": 28000,
+      "descripcion": "Cobertura ampliada con cirugías y estudios de diagnóstico.",
+      "cobertura": [
+        "Todo lo incluido en Básico",
+        "Cirugías y procedimientos quirúrgicos",
+        "Estudios de diagnóstico",
+        "Hospitalización clínica",
+        "Revisiones preventivas"
+      ],
+      "servicios": [
+        "Todo lo incluido en Básico",
+        "Cirugías y procedimientos quirúrgicos",
+        "Estudios de diagnóstico",
+        "Hospitalización clínica",
+        "Revisiones preventivas"
+      ],
+      "copago": "Sin copago"
+    },
+    {
+      "id": "Premium",
+      "nombre": "Plan Premium / Multimascota",
+      "precio": 42000,
+      "descripcion": "Cobertura total 100%, internación y farmacia con atención prioritaria.",
+      "cobertura": [
+        "Cobertura total 100%",
+        "Internación y cuidados intensivos",
+        "Farmacia y medicamentos",
+        "Cirugías, estudios y rehabilitación",
+        "Atención prioritaria y cobertura máxima"
+      ],
+      "servicios": [
+        "Cobertura total 100%",
+        "Internación y cuidados intensivos",
+        "Farmacia y medicamentos",
+        "Cirugías, estudios y rehabilitación",
+        "Atención prioritaria y cobertura máxima"
+      ],
+      "copago": "Sin copago"
+    }
+  ],
+  "users": [
+    {
+      "id": "admin-1",
+      "nombre": "Administrador PetSafe",
+      "email": "admin@petsafe.com",
+      "password": "admin123",
+      "telefono": "+54 11 4000-0000",
+      "rol": "admin",
+      "estado": "aprobado",
+      "plan_id": "Premium",
+      "poliza": null,
+      "created_at": "2026-11-02T02:40:48.171155+00:00",
+      "plan": "Premium",
+      "facturas": [],
+      "mascotas": [],
+      "dni": ""
+    },
+    {
+      "id": "user-1",
+      "nombre": "María López",
+      "email": "usuario@petsafe.com",
+      "password": "user123",
+      "telefono": "+54 11 2233-3333",
+      "rol": "usuario",
+      "estado": "aprobado",
+      "plan_id": "Premium",
+      "poliza": "PS-884120",
+      "created_at": "2026-11-02T02:40:48.171155+00:00",
+      "plan": "Premium",
+      "facturas": [
+        {
+          "id": "fac-00018490",
+          "usuario_id": "user-1",
+          "numero": "FC-C 0004-00018490",
+          "periodo": "Octubre 2026",
+          "concepto": "Cobertura Plan Premium - Póliza #PS-884120",
+          "vencimiento": "10/10/2026",
+          "importe": 42000,
+          "estado": "pagada",
+          "cae": "74429183920194",
+          "bar_code": "0004000184902026101000450000071589421984210000184927",
+          "fecha_emision": "2026-10-01",
+          "codigo_pago": "000400018490",
+          "titular": "María López",
+          "plan": "Premium",
+          "tipo": "Rapipago / Pago Fácil",
+          "created_at": "2026-11-02T02:40:48.171155+00:00",
+          "barCode": "0004000184902026101000450000071589421984210000184927",
+          "codigoPago": "000400018490",
+          "fechaEmision": "2026-10-01",
+          "fechaAcreditacion": "",
+          "mascota": "Mascota no registrada",
+          "apunte": "Cobertura mensual",
+          "nota": "Cobertura mensual"
+        },
+        {
+          "id": "fac-00018491",
+          "usuario_id": "user-1",
+          "numero": "FC-C 0004-00018491",
+          "periodo": "Noviembre 2026",
+          "concepto": "Cobertura Plan Premium - Póliza #PS-884120",
+          "vencimiento": "10/11/2026",
+          "importe": 42000,
+          "estado": "pendiente",
+          "cae": "74429183920195",
+          "bar_code": "0004000184912026111000450000071589421984210000184927",
+          "fecha_emision": "2026-11-01",
+          "codigo_pago": "000400018491",
+          "titular": "María López",
+          "plan": "Premium",
+          "tipo": "Rapipago / Pago Fácil",
+          "created_at": "2026-11-02T02:40:48.171155+00:00",
+          "barCode": "0004000184912026111000450000071589421984210000184927",
+          "codigoPago": "000400018491",
+          "fechaEmision": "2026-11-01",
+          "fechaAcreditacion": "",
+          "mascota": "Mascota no registrada",
+          "apunte": "Cobertura mensual",
+          "nota": "Cobertura mensual"
+        }
+      ],
+      "mascotas": [
+        {
+          "id": "pet-1",
+          "usuario_id": "user-1",
+          "nombre": "Luna",
+          "especie": "Perro",
+          "edad": 3
+        },
+        {
+          "id": "pet-2",
+          "usuario_id": "user-1",
+          "nombre": "Simona",
+          "especie": "Gato",
+          "edad": 2
+        }
+      ],
+      "dni": ""
+    },
+    {
+      "id": "user-2",
+      "nombre": "Lucas Gómez",
+      "email": "lucas.pendiente@petsafe.com",
+      "password": "demo123",
+      "telefono": "+54 11 5556-6677",
+      "rol": "usuario",
+      "estado": "aprobado",
+      "plan_id": "Basico",
+      "poliza": "PET-2026154",
+      "created_at": "2026-11-02T02:40:48.171155+00:00",
+      "plan": "Basico",
+      "facturas": [],
+      "mascotas": [
+        {
+          "id": "pet-3",
+          "usuario_id": "user-2",
+          "nombre": "Milo",
+          "especie": "Perro",
+          "edad": 4
+        }
+      ],
+      "dni": ""
+    }
+  ],
+  "red_veterinarias": [
+    {
+      "id": "vet-1",
+      "nombre": "Hospital Veterinario 24hs Sur",
+      "tipo": "Clinica 24hs",
+      "direccion": "Av. Hipólito Yrigoyen 2500",
+      "telefono": "+54 351 455-1234",
+      "beneficio_asociado": "Atención de urgencia sin cargo con Plan Premium"
+    },
+    {
+      "id": "vet-2",
+      "nombre": "Farmacia Veterinaria San Cayetano",
+      "tipo": "Farmacia",
+      "direccion": "San Jerónimo 450",
+      "telefono": "+54 351 422-9876",
+      "beneficio_asociado": "15% de descuento en medicamentos recetados"
+    },
+    {
+      "id": "vet-3",
+      "nombre": "Centro Médico Veterinario Nueva Córdoba",
+      "tipo": "Clinica 24hs",
+      "direccion": "Chacabuco 820",
+      "telefono": "+54 351 468-1122",
+      "beneficio_asociado": "Guardia preferencial y consultas bonificadas"
+    }
+  ],
+  "beneficios": [
+    {
+      "id": "ee0194a6-d992-46fd-ae84-9f86ac2c00fa",
+      "nombre": "Alimentos Royal Canin",
+      "descripcion": "15% de descuento en la primera compra de alimento seco para perros y gatos.",
+      "descuento": "15% OFF",
+      "categoria": "Alimentos",
+      "created_at": "2026-11-02T03:19:13.140175+00:00"
+    },
+    {
+      "id": "6e3d2a78-fbb2-4c75-bb9a-fe533aa73fad",
+      "nombre": "Farmacia Veterinaria 24h",
+      "descripcion": "Descuento en medicamentos oncológicos y antiparasitarios.",
+      "descuento": "10% OFF",
+      "categoria": "Farmacias",
+      "created_at": "2026-11-02T03:19:13.140175+00:00"
+    },
+    {
+      "id": "f79a0918-4046-4856-9f99-59dd35e57126",
+      "nombre": "Banco Asociado (Beneficios Tarjeta)",
+      "descripcion": "Cuotas sin interés en coberturas y reintegros por pago anual.",
+      "descuento": "Sin interés",
+      "categoria": "Bancos",
+      "created_at": "2026-11-02T03:19:13.140175+00:00"
+    }
+  ]
+}

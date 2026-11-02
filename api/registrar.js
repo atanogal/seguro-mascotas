@@ -17,8 +17,17 @@ export default async function handler(req, res) {
     const especie = String(body.especie || '').trim();
     const edad = Number(body.edad ?? 0);
     const plan = String(body.plan || '').trim();
+    const mascotasPayload = Array.isArray(body.mascotas) ? body.mascotas : [];
 
-    if (!nombre || !dni || !email || !telefono || !password || !mascotaNombre || !especie || !plan) {
+    const normalizedMascotas = mascotasPayload.length
+      ? mascotasPayload.map((pet) => ({
+          nombre: String(pet?.nombre || mascotaNombre || '').trim(),
+          especie: String(pet?.especie || especie || 'Perro').trim() || 'Perro',
+          edad: Number(pet?.edad ?? edad ?? 0)
+        }))
+      : [{ nombre: mascotaNombre, especie: especie || 'Perro', edad: Number.isFinite(edad) ? edad : 0 }];
+
+    if (!nombre || !dni || !email || !telefono || !password || !normalizedMascotas.length || !normalizedMascotas.every((pet) => pet.nombre && pet.especie) || !plan) {
       return res.status(400).json({ error: 'Faltan datos obligatorios del alta del afiliado.' });
     }
 
@@ -41,21 +50,28 @@ export default async function handler(req, res) {
       const userId = crypto.randomUUID();
       const { data: newUser, error: userError } = await supabase
         .from('usuarios')
-        .insert([{ id: userId, nombre, dni, email, password, telefono, rol: 'usuario', estado: 'pendiente', plan, poliza: null }])
+        .insert([{ id: userId, nombre, dni, email, password, telefono, rol: 'usuario', estado: 'pendiente', plan, plan_id: plan, poliza: null }])
         .select('*')
         .single();
 
       if (userError) throw userError;
 
-      const { data: pet, error: petError } = await supabase
+      const petRows = normalizedMascotas.map((pet) => ({
+        id: crypto.randomUUID(),
+        usuario_id: newUser.id,
+        nombre: pet.nombre,
+        especie: pet.especie,
+        edad: Number.isFinite(Number(pet.edad)) ? Number(pet.edad) : 0
+      }));
+
+      const { data: pets, error: petError } = await supabase
         .from('mascotas')
-        .insert([{ id: crypto.randomUUID(), usuario_id: newUser.id, nombre: mascotaNombre, especie, edad: Number.isFinite(edad) ? edad : 0 }])
-        .select('*')
-        .single();
+        .insert(petRows)
+        .select('*');
 
       if (petError) throw petError;
 
-      return res.status(201).json({ ok: true, user: { ...newUser, mascotas: [pet] }, db: { users: [newUser], plans: [] } });
+      return res.status(201).json({ ok: true, user: { ...newUser, mascotas: pets || petRows }, db: { users: [newUser], plans: [] } });
     } catch (supabaseError) {
       const db = await readDatabase();
       const emailExists = db.users.some((user) => user.email.toLowerCase() === email);
@@ -73,9 +89,10 @@ export default async function handler(req, res) {
         rol: 'usuario',
         estado: 'pendiente',
         plan,
+        plan_id: plan,
         poliza: null,
         facturas: [],
-        mascotas: [{ id: `pet-${Date.now()}`, nombre: mascotaNombre, especie, edad: Number.isFinite(edad) ? edad : 0 }]
+        mascotas: normalizedMascotas.map((pet, index) => ({ id: `pet-${Date.now()}-${index}`, nombre: pet.nombre, especie: pet.especie, edad: Number.isFinite(Number(pet.edad)) ? Number(pet.edad) : 0 }))
       };
 
       const nextDb = normalizeDbState({ plans: db.plans, users: [...db.users, newUser] });
